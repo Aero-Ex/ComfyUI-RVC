@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import comfy.ops
+from .synth import fold_weight_norm
 
 
 class _Transpose(nn.Module):
@@ -74,6 +74,7 @@ class FCPitch(nn.Module):
         super().__init__()
         assert conv_only, "only conv_only FCPE is supported"
         self.out_dims = out_dims
+        self.dtype = dtype
         self.threshold = 0.006
         self.input_stack = nn.Sequential(
             operations.Conv1d(128, hidden_dims, 3, 1, 1, device=device, dtype=dtype),
@@ -91,12 +92,7 @@ class FCPitch(nn.Module):
         self.register_buffer("mel_basis", torch.empty(128, 513, device=device))
 
     def load_state_dict(self, state_dict, strict=True, assign=False):
-        sd = dict(state_dict)
-        if "output_proj.weight_g" in sd and "output_proj.weight_v" in sd:
-            g = sd.pop("output_proj.weight_g")
-            v = sd.pop("output_proj.weight_v")
-            # Same fused kernel upstream's weight_norm parametrization runs; naive g*v/||v|| differs by ~1e-7.
-            sd["output_proj.weight"] = torch._weight_norm(v, g, 0)
+        sd = fold_weight_norm(state_dict)
         if "rvc.mel_basis" in sd and "mel_basis" not in sd:
             sd["mel_basis"] = sd.pop("rvc.mel_basis")
         return super().load_state_dict(sd, strict=strict, assign=assign)
@@ -127,12 +123,13 @@ class FCPitch(nn.Module):
         return mel
 
     def forward(self, wav, key_shift=0, speed=1, threshold=None):
+        """wav: [B, samples] float32 at 16 kHz. The mel and the cents decoding stay in fp32 like upstream; only the network runs in the model dtype."""
         if threshold is None:
             threshold = self.threshold
-        mel = self._wav_to_mel(wav, key_shift, speed)
-        x = self.input_stack(mel.transpose(-1, -2)).transpose(-1, -2)
+        mel = self._wav_to_mel(wav.float(), key_shift, speed)
+        x = self.input_stack(mel.transpose(-1, -2).to(self.dtype)).transpose(-1, -2)
         x = self.net(x)
-        latent = torch.sigmoid(self.output_proj(self.norm(x)))
+        latent = torch.sigmoid(self.output_proj(self.norm(x)).float())
         batch, frames, _ = latent.shape
         cents = self.cent_table.to(device=latent.device, dtype=latent.dtype)[None, None, :].expand(batch, frames, -1)
         confidence, max_index = torch.max(latent, dim=-1, keepdim=True)

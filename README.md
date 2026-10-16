@@ -1,6 +1,6 @@
 # ComfyUI-RVC
 
-Native, dependency-free Retrieval-based Voice Conversion (RVC) for ComfyUI.
+dependency-free Retrieval-based Voice Conversion (RVC) for ComfyUI.
 Inference only — no training, no index building.
 
 ## Models
@@ -41,7 +41,7 @@ Load RVC Voice ──────────┘        ↑
 3. **Load RVC Voice** — pick your voice `.pth`.
 4. **Load Audio** — any source audio. Stereo and arbitrary sample rates are
    handled for you (resampled to 16 kHz mono internally).
-5. **RVC Convert** — set `f0_method` to match the pitch model you loaded.
+5. **RVC Convert** — connect the three models and the audio.
 6. Feed the output into `Preview Audio` or `Save Audio`.
 
 ## Node inputs
@@ -55,26 +55,22 @@ take a filename from `models/rvc/`.
 
 | Input | Default | Notes |
 | --- | --- | --- |
-| `f0_method` | `rmvpe` | Must match the loaded pitch model, except `hybrid` (below). |
-| `f0_up_key` | 0 | Pitch shift in semitones, −12…12. |
+| `f0_up_key` | 0 | Pitch shift in semitones, −24…24. |
 | `speaker_id` | 0 | Speaker slot for multi-speaker voices. Range auto-clamps to the voice. |
 | `index_rate` | 0.75 | Retrieval blend strength. Only used when an index is connected. |
-| `protect` | 0.33 | Protects unvoiced/consonant sounds from the f0 path. 0.33 is the upstream default; 0.5 disables the blend entirely. |
+| `protect` | 0.33 | Upstream's consonant protection: frames at 0 Hz keep only this share of the index-retrieved features. Like upstream, unvoiced frames are interpolated first, so it only acts when no frame is voiced. 0.5 disables it. |
 | `rms_mix_rate` | 1.0 | Volume-envelope matching against the input. 1.0 = off. |
 | `resample_sr` | 0 | Output sample rate. 0 keeps the voice's own rate. |
+| `seed` | 0 | Seed for the voice's latent and excitation noise. Same seed, same output. |
 
-`pitch_model_b` is only needed for `f0_method="hybrid"`, which averages the
-primary and secondary pitch estimators. Leave it unconnected otherwise —
-connecting only `pitch_model_a` with `hybrid` selected raises a clear error.
+The pitch estimator is whichever model is connected to `pitch`. Connecting a
+second one to `pitch_model_b` averages the two where both hear a voiced frame.
 
 ## Notes
 
-- **Output is stochastic.** RVC samples from a posterior at inference, so two
-  runs on identical input differ by roughly 0.4–0.7 in waveform amplitude.
-  This matches upstream, which seeds once at GUI startup rather than per
-  conversion. It is not a bug and not fixable without changing the model's
-  math.
-- **VRAM** is dynamic. All three base models plus a voice run comfortably on
+- **Output is sampled.** RVC draws latent noise at inference; the `seed`
+  input fixes it, so a seed always gives the same conversion.
+- **VRAM** is managed by ComfyUI's dynamic loader. All three base models plus a voice run comfortably on
   a 6 GB card at fp16.
 - **Sample rate** of the output is the voice model's native rate unless
   `resample_sr` is set. Upstream uses `librosa.resample`; this pack uses

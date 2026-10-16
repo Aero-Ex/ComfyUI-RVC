@@ -1,9 +1,9 @@
-import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-import comfy.ops
 from comfy.ldm.modules.attention import AttentionTensorContainer, ComfyAttention, optimized_attention
+
+from .synth import fold_weight_norm
 
 
 CONV_SPECS = [(512, 10, 5), (512, 3, 2), (512, 3, 2), (512, 3, 2),
@@ -63,11 +63,15 @@ class HubertEncoder(nn.Module):
         self.layer_norm = operations.LayerNorm(512, eps=1e-5, device=device, dtype=dtype)
         self.post_extract_proj = operations.Linear(512, DIM, bias=True, device=device, dtype=dtype)
         self.encoder = nn.Module()
-        pos_conv = nn.Conv1d(DIM, DIM, 128, padding=64, groups=16, device=device, dtype=dtype)
-        self.encoder.pos_conv = nn.Sequential(nn.utils.weight_norm(pos_conv, name="weight", dim=2))
+        self.encoder.pos_conv = nn.Sequential(operations.Conv1d(DIM, DIM, 128, padding=64, groups=16, device=device, dtype=dtype))
         self.encoder.layer_norm = operations.LayerNorm(DIM, eps=1e-5, device=device, dtype=dtype)
         self.encoder.layers = nn.ModuleList(HubertEncoderLayer(device=device, dtype=dtype, operations=operations) for _ in range(N_LAYERS))
         self.final_proj = operations.Linear(DIM, 256, bias=True, device=device, dtype=dtype)
+        self.dtype = dtype
+
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        # fairseq normalizes the positional conv over the kernel axis (dim=2).
+        return super().load_state_dict(fold_weight_norm(state_dict, dim=2), strict=strict, assign=assign)
 
     def forward(self, wav):
         h = wav.unsqueeze(1)

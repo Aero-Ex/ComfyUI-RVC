@@ -11,7 +11,9 @@ class BiGRU(nn.Module):
         self.gru = nn.GRU(input_features, hidden_features, num_layers=num_layers, batch_first=True, bidirectional=True, device=device, dtype=dtype)
 
     def forward(self, x):
-        return self.gru(x)[0]
+        # nn.GRU is not a ComfyUI op, so cast its weights at use like the ops do; partial loading may leave them offloaded.
+        params = {k: comfy.ops.cast_to_input(v, x) for k, v in self.gru.named_parameters()}
+        return torch.func.functional_call(self.gru, params, (x,))[0]
 
 
 class ConvBlockRes(nn.Module):
@@ -122,8 +124,20 @@ class RMVPEModel(nn.Module):
             nn.Sigmoid(),
         )
         self.cents_mapping = torch.arange(360).float().mul_(20).add_(1997.3794084376191)
+        self.register_buffer("mel_basis", torch.empty(128, 513, device=device))
+        self.dtype = dtype
 
-    def forward(self, mel):
+    def load_state_dict(self, state_dict, strict=True, assign=False):
+        sd = dict(state_dict)
+        sd["mel_basis"] = sd.pop("rvc.mel_basis").float()
+        return super().load_state_dict(sd, strict=strict, assign=assign)
+
+    def forward(self, wav, threshold=0.03):
+        """wav: [B, samples] float32 at 16 kHz -> f0 in Hz per 10 ms frame, 0 when unvoiced."""
+        mel = log_mel_spectrogram(wav.float(), self.mel_basis)
+        return self.decode(self.mel2hidden(mel.to(self.dtype)).float(), threshold)
+
+    def salience(self, mel):
         x = mel.transpose(-1, -2).unsqueeze(1)
         enc = self.unet.encoder
         x = enc.bn(x)
@@ -141,7 +155,7 @@ class RMVPEModel(nn.Module):
         n_pad = 32 * ((n_frames - 1) // 32 + 1) - n_frames
         if n_pad > 0:
             mel = F.pad(mel, (0, n_pad), mode="constant")
-        hidden = self(mel)
+        hidden = self.salience(mel)
         return hidden[:, :n_frames]
 
     def decode(self, hidden, thred=0.03):

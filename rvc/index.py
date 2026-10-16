@@ -1,22 +1,26 @@
+import numpy as np
 import torch
 
 
-def blend_index_features(feats, index_vectors, index_rate, k=8):
+def blend_index_features(feats, index_vectors, index_rate, k=8, chunk_elements=1 << 26):
     """FAISS-free replacement for RVC's index retrieval.
 
-    feats: [T, D] float32 source features. index_vectors: [N, D] float32.
-    Returns index_rate-blended [T, D]. Matches infer/vc/pipeline.py:186-196,
-    whose index is built with faiss.index_factory(d, "IVF,Flat"), i.e. L2
-    metric -- faiss reports *squared* L2, so weight = (1/score)^2 is
-    (1/dist^2)^2 = 1/dist^4. Exact-zero scores clamp to 1e-8 rather than
-    producing inf/NaN.
+    feats: [T, D] source features. index_vectors: [N, D] float32 on the same device.
+    Returns index_rate-blended [T, D] in feats.dtype. Upstream searches an L2 faiss index,
+    which reports *squared* distances, so the weight (1/score)^2 is 1/dist^4. Distances are
+    computed in frame chunks so the [T, N] matrix never has to exist at once.
     """
-    dists = torch.cdist(feats.float(), index_vectors.float()).pow(2)
-    score, ix = dists.topk(k, largest=False)
-    weight = torch.square(1 / score.clamp_min(1e-8))
-    weight = weight / weight.sum(dim=1, keepdim=True)
-    retrieved = (index_vectors[ix] * weight.unsqueeze(-1)).sum(dim=1)
-    return retrieved.to(feats.dtype) * index_rate + feats * (1 - index_rate)
+    query = feats.float()
+    vectors_sq = index_vectors.square().sum(1)
+    rows = max(1, chunk_elements // index_vectors.shape[0])
+    retrieved = []
+    for chunk in query.split(rows):
+        score = torch.addmm(vectors_sq, chunk, index_vectors.t(), alpha=-2).add_(chunk.square().sum(1, keepdim=True))
+        score, ix = score.topk(k, largest=False)
+        weight = score.clamp_min_(1e-8).reciprocal_().square_()
+        weight = weight / weight.sum(dim=1, keepdim=True)
+        retrieved.append(torch.einsum("tk,tkd->td", weight, index_vectors[ix]))
+    return torch.lerp(query, torch.cat(retrieved), index_rate).to(feats.dtype)
 
 
 _FAISS_MAGIC = b"IwFl"
@@ -29,7 +33,6 @@ def load_index_vectors(path):
                 "ERROR: %s is a FAISS index, which this pack does not read. "
                 "Export it once to .npy, or run without an index." % path)
     if path.lower().endswith(".npy"):
-        import numpy as np
         return torch.from_numpy(np.load(path)).float()
     obj = torch.load(path, map_location="cpu", weights_only=True)
     if isinstance(obj, dict):

@@ -1,8 +1,8 @@
 {
   "id": "5877bdda-2019-4746-93ac-0aa9f6330f25",
   "revision": 0,
-  "last_node_id": 11,
-  "last_link_id": 10,
+  "last_node_id": 12,
+  "last_link_id": 16,
   "nodes": [
     {
       "id": 1,
@@ -24,7 +24,7 @@
           "name": "pitch",
           "type": "RVC_PITCH",
           "links": [
-            4
+            13
           ]
         }
       ],
@@ -58,7 +58,7 @@
           "name": "hubert",
           "type": "RVC_HUBERT",
           "links": [
-            3
+            12
           ]
         }
       ],
@@ -70,85 +70,6 @@
       ],
       "widgets_values_named": {
         "rvc_name": "hubert_base.safetensors"
-      }
-    },
-    {
-      "id": 4,
-      "type": "RVCConvert",
-      "pos": [
-        165.37534740613813,
-        393.75506016851546
-      ],
-      "size": [
-        270,
-        302
-      ],
-      "flags": {},
-      "order": 7,
-      "mode": 0,
-      "inputs": [
-        {
-          "name": "voice",
-          "type": "RVC_VOICE",
-          "link": 2
-        },
-        {
-          "name": "hubert",
-          "type": "RVC_HUBERT",
-          "link": 3
-        },
-        {
-          "name": "pitch",
-          "type": "RVC_PITCH",
-          "link": 4
-        },
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "link": 8
-        },
-        {
-          "name": "pitch_model_b",
-          "shape": 7,
-          "type": "RVC_PITCH",
-          "link": null
-        },
-        {
-          "name": "index",
-          "shape": 7,
-          "type": "RVC_INDEX",
-          "link": 9
-        }
-      ],
-      "outputs": [
-        {
-          "name": "audio",
-          "type": "AUDIO",
-          "links": [
-            10
-          ]
-        }
-      ],
-      "properties": {
-        "Node name for S&R": "RVCConvert"
-      },
-      "widgets_values": [
-        "rmvpe",
-        12,
-        0,
-        0.5,
-        0.33,
-        0.75,
-        0
-      ],
-      "widgets_values_named": {
-        "f0_method": "rmvpe",
-        "f0_up_key": 12,
-        "speaker_id": 0,
-        "index_rate": 0.5,
-        "protect": 0.33,
-        "rms_mix_rate": 0.75,
-        "resample_sr": 0
       }
     },
     {
@@ -171,7 +92,7 @@
           "name": "voice",
           "type": "RVC_VOICE",
           "links": [
-            2
+            11
           ]
         }
       ],
@@ -179,10 +100,10 @@
         "Node name for S&R": "RVCLoaderVoice"
       },
       "widgets_values": [
-        "Mamizou Futatsuiwa (Touhou Genso Wanderer)/Mamizou Futatsuiwa (Touhou Genso Wanderer).pth"
+        "Ben10OMNIVERSE.pth"
       ],
       "widgets_values_named": {
-        "rvc_name": "Mamizou Futatsuiwa (Touhou Genso Wanderer)/Mamizou Futatsuiwa (Touhou Genso Wanderer).pth"
+        "rvc_name": "Ben10OMNIVERSE.pth"
       }
     },
     {
@@ -213,11 +134,11 @@
         "Node name for S&R": "LoadAudio"
       },
       "widgets_values": [
-        "YTDown.com_YouTube_Media_xjlFc0zkX4U_रुपये-में-कितनी-बैठेगी-एक-AI-सर्च-की-कीमत-What-Does-an-AI-Search-Really-Cost_009_128k.mp3",
+        "156550__acclivity__a-dream-within-a-dream.wav",
         ""
       ],
       "widgets_values_named": {
-        "audio": "YTDown.com_YouTube_Media_xjlFc0zkX4U_रुपये-में-कितनी-बैठेगी-एक-AI-सर्च-की-कीमत-What-Does-an-AI-Search-Really-Cost_009_128k.mp3",
+        "audio": "156550__acclivity__a-dream-within-a-dream.wav",
         "upload": ""
       }
     },
@@ -247,7 +168,7 @@
           "name": "AUDIO",
           "type": "AUDIO",
           "links": [
-            8
+            14
           ]
         }
       ],
@@ -283,7 +204,7 @@
           "name": "index",
           "type": "RVC_INDEX",
           "links": [
-            9
+            15
           ]
         }
       ],
@@ -291,10 +212,10 @@
         "Node name for S&R": "RVCLoaderIndex"
       },
       "widgets_values": [
-        "Mamizou Futatsuiwa (Touhou Genso Wanderer)/Mamizou Futatsuiwa (Touhou Genso Wanderer).npy"
+        "added_IVF256_Flat_nprobe_1_Ben10OMNIVERSE_v2.npy"
       ],
       "widgets_values_named": {
-        "rvc_name": "Mamizou Futatsuiwa (Touhou Genso Wanderer)/Mamizou Futatsuiwa (Touhou Genso Wanderer).npy"
+        "rvc_name": "added_IVF256_Flat_nprobe_1_Ben10OMNIVERSE_v2.npy"
       }
     },
     {
@@ -315,7 +236,7 @@
         {
           "name": "audio",
           "type": "AUDIO",
-          "link": 10
+          "link": 16
         }
       ],
       "outputs": [
@@ -360,33 +281,90 @@
       },
       "color": "#432",
       "bgcolor": "#653"
+    },
+    {
+      "id": 12,
+      "type": "RVCConvert",
+      "pos": [
+        142.35446358062526,
+        375.5415721067948
+      ],
+      "size": [
+        270,
+        326
+      ],
+      "flags": {},
+      "order": 7,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "voice",
+          "type": "RVC_VOICE",
+          "link": 11
+        },
+        {
+          "name": "hubert",
+          "type": "RVC_HUBERT",
+          "link": 12
+        },
+        {
+          "name": "pitch",
+          "type": "RVC_PITCH",
+          "link": 13
+        },
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "link": 14
+        },
+        {
+          "name": "pitch_model_b",
+          "shape": 7,
+          "type": "RVC_PITCH",
+          "link": null
+        },
+        {
+          "name": "index",
+          "shape": 7,
+          "type": "RVC_INDEX",
+          "link": 15
+        }
+      ],
+      "outputs": [
+        {
+          "name": "audio",
+          "type": "AUDIO",
+          "links": [
+            16
+          ]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "RVCConvert"
+      },
+      "widgets_values": [
+        1,
+        0,
+        0.75,
+        0.33,
+        1,
+        0,
+        967012150372844,
+        "randomize"
+      ],
+      "widgets_values_named": {
+        "f0_up_key": 1,
+        "speaker_id": 0,
+        "index_rate": 0.75,
+        "protect": 0.33,
+        "rms_mix_rate": 1,
+        "resample_sr": 0,
+        "seed": 967012150372844,
+        "control_after_generate": "randomize"
+      }
     }
   ],
   "links": [
-    [
-      2,
-      5,
-      0,
-      4,
-      0,
-      "RVC_VOICE"
-    ],
-    [
-      3,
-      3,
-      0,
-      4,
-      1,
-      "RVC_HUBERT"
-    ],
-    [
-      4,
-      1,
-      0,
-      4,
-      2,
-      "RVC_PITCH"
-    ],
     [
       7,
       6,
@@ -396,24 +374,48 @@
       "AUDIO"
     ],
     [
-      8,
+      11,
+      5,
+      0,
+      12,
+      0,
+      "RVC_VOICE"
+    ],
+    [
+      12,
+      3,
+      0,
+      12,
+      1,
+      "RVC_HUBERT"
+    ],
+    [
+      13,
+      1,
+      0,
+      12,
+      2,
+      "RVC_PITCH"
+    ],
+    [
+      14,
       8,
       0,
-      4,
+      12,
       3,
       "AUDIO"
     ],
     [
-      9,
+      15,
       9,
       0,
-      4,
+      12,
       5,
       "RVC_INDEX"
     ],
     [
-      10,
-      4,
+      16,
+      12,
       0,
       10,
       0,
@@ -424,13 +426,13 @@
   "config": {},
   "extra": {
     "ds": {
-      "scale": 0.6507964483402079,
+      "scale": 0.6059646756970197,
       "offset": [
-        1206.3609491789307,
-        64.12053441415965
+        913.0212587665344,
+        182.50404697003887
       ]
     },
-    "frontendVersion": "1.55.14",
+    "frontendVersion": "1.55.17",
     "VHS_latentpreview": false,
     "VHS_latentpreviewrate": 0,
     "VHS_MetadataImage": true,
